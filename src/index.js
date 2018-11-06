@@ -112,6 +112,7 @@ async function drawPostDetail(postId) {
   const bodyEl = frag.querySelector('.body')
   const backEl = frag.querySelector('.back')
   const commentListEl = frag.querySelector('.comment-list')
+  const commentFormEl = frag.querySelector('.comment-form')
 
   // 3. 필요한 데이터 불러오기
   const {data: {title, body, user, comments}} = await api.get('/posts/' + postId, {
@@ -120,6 +121,15 @@ async function drawPostDetail(postId) {
       _embed: 'comments'
     }
   })
+  const params = new URLSearchParams()
+  comments.forEach(c => {
+    params.append('id', c.userId)
+    // commments를 순회하면서 userid를 찾기
+  })
+  const {data: userList} = await api.get('/users', {
+    params
+  })
+
   // {data} => 분해대입
   // 4. 내용 채우기
   titleEl.textContent = title
@@ -138,6 +148,10 @@ async function drawPostDetail(postId) {
     // 4. 내용 채우기
     bodyEl.textContent = commentItem.body
 
+    const user = userList.find(item => item.id === commentItem.userId)
+    // 댓글 작성자의 객체를 찾음
+    authorEl.textContent = user.username
+
     // 5. 이벤트 리스너 등록하기
     // 6. 템플릿을 문서에 삽입
     commentListEl.appendChild(frag)
@@ -148,7 +162,14 @@ async function drawPostDetail(postId) {
   backEl.addEventListener('click', e => {
     drawPostList()
   })
-
+  commentFormEl.addEventListener('submit', async e => {
+    e.preventDefault()
+    const body = e.target.elements.body.value
+    await api.post(`/posts/${postId}/comments`, {
+      body
+    })
+    drawPostDetail(postId)
+  })
   // 6. 템플릿을 문서에 삽입
   rootEl.textContent = ''
   rootEl.appendChild(frag)
